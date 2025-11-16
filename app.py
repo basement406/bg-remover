@@ -1,6 +1,7 @@
 import os
-# FORCE CPU ONLY — NO GPU
+# FORCE CPU ONLY — THIS IS THE KEY
 os.environ["ONNXRUNTIME_EXECUTION_PROVIDERS"] = "CPUExecutionProvider"
+os.environ["REMGB_MODEL"] = "u2net"  # lightweight model
 
 from flask import Flask, request, send_file
 from rembg import remove
@@ -13,24 +14,26 @@ app = Flask(__name__)
 @app.route("/")
 def home():
     return """
-    <h1 style="font-family:Arial;color:#2c3e50;text-align:center">Background Remover by @cracksellington</h1>
-    <p style="text-align:center">Upload up to <strong>100 images</strong> → Get ZIP with transparent PNGs!</p>
-    <form action="/upload" method="post" enctype="multipart/form-data" style="text-align:center">
-        <input type="file" name="files" multiple accept="image/*" required style="padding:10px"><br><br>
-        <button type="submit" style="padding:12px 24px;font-size:18px;background:#e74c3c;color:white;border:none;border-radius:8px;cursor:pointer">Remove Backgrounds</button>
-    </form>
-    <br>
-    <small style="display:block;text-align:center">Free • Open Source • <a href="https://x.com/cracksellington">@cracksellington</a></small>
+    <div style="text-align:center;font-family:Arial;margin-top:50px">
+        <h1 style="color:#e74c3c">Background Remover</h1>
+        <p><strong>Upload up to 100 images</strong> → Get transparent PNGs!</p>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="files" multiple accept="image/*" required style="padding:10px"><br><br>
+            <button type="submit" style="padding:15px 30px;font-size:18px;background:#27ae60;color:white;border:none;border-radius:8px;cursor:pointer">Remove Backgrounds</button>
+        </form>
+        <br>
+        <small>Made by <a href="https://x.com/cracksellington">@cracksellington</a> • Free & Open Source</small>
+    </div>
     """
 
 @app.route("/upload", methods=["POST"])
 def upload():
     if "files" not in request.files:
-        return "<h3>No files uploaded</h3>", 400
+        return "<h3>No files</h3>", 400
 
     files = request.files.getlist("files")
     if not 1 <= len(files) <= 100:
-        return "<h3>Upload 1 to 100 images</h3>", 400
+        return "<h3>1–100 images only</h3>", 400
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -54,7 +57,7 @@ def upload():
         download_name='nobg-cracksellington.zip'
     )
 
-# RENDER FIX: Use $PORT
+# RENDER AUTO-DETECTS THIS
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     print(f"Starting on port {port}")
