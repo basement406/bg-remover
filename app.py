@@ -11,6 +11,7 @@ import uuid
 
 app = Flask(__name__)
 
+# LOAD MODEL ONCE
 print("Loading ECOMMERCE AI (isnet-general-use)...")
 session = new_session("isnet-general-use")
 print("Model loaded! 100 items = <1.5GB RAM.")
@@ -60,31 +61,43 @@ def upload():
         return jsonify({"error": "1–100 images"}), 400
 
     job_id = str(uuid.uuid4())
-    jobs[job_id] = {"files": files, "status": "processing", "progress": 0, "result": None}
+    
+    # READ ALL FILES INTO MEMORY BEFORE THREAD
+    file_data = []
+    for file in files:
+        file_bytes = file.read()  # READ NOW
+        file_data.append({
+            "filename": file.filename,
+            "data": file_bytes
+        })
 
+    jobs[job_id] = {"file_data": file_data, "status": "processing", "progress": 0, "result": None}
+    
     threading.Thread(target=process_job, args=(job_id,)).start()
     return jsonify({"job_id": job_id})
 
 def process_job(job_id):
     job = jobs[job_id]
-    files = job["files"]
+    file_data = job["file_data"]
     zip_buffer = io.BytesIO()
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        for i, file in enumerate(files):
+        for i, item in enumerate(file_data):
             try:
-                print(f"Processing {i+1}/{len(files)}: {file.filename}")
-                img = Image.open(file.stream).convert("RGBA")
+                print(f"Processing {i+1}/{len(file_data)}: {item['filename']}")
+                
+                # OPEN FROM BYTES
+                img = Image.open(io.BytesIO(item["data"])).convert("RGBA")
                 output = remove(img, session=session, alpha_matting=False)
                 
                 img_io = io.BytesIO()
                 output.save(img_io, 'PNG')
-                img_io.seek(0)  # ← CRITICAL
-                zf.writestr(
-                    os.path.splitext(file.filename)[0] + ".png",
-                    img_io.getvalue()
-                )
-                job["progress"] = int((i + 1) / len(files) * 100)
+                img_io.seek(0)
+                
+                name = os.path.splitext(item["filename"])[0] + ".png"
+                zf.writestr(name, img_io.getvalue())
+                
+                job["progress"] = int((i + 1) / len(file_data) * 100)
                 print(f"Progress: {job['progress']}%")
             except Exception as e:
                 print(f"Error: {e}")
