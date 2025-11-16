@@ -9,10 +9,10 @@ import zipfile
 
 app = Flask(__name__)
 
-# LOAD MODEL ONCE AT STARTUP — THIS IS THE KEY
-print("Loading AI model (u2net)...")
-session = new_session("u2net")
-print("Model loaded! Ready for 100 images.")
+# LOAD LIGHTWEIGHT MODEL ON STARTUP (43MB, ~200MB RAM)
+print("Loading lightweight AI model (silueta)...")
+session = new_session("silueta")  # Smaller than u2net, no memory issues
+print("Model loaded! Ready for 100 images (low RAM mode).")
 
 @app.route("/")
 def home():
@@ -24,7 +24,7 @@ def home():
             <input type="file" name="files" multiple accept="image/*" required style="padding:10px"><br><br>
             <button type="submit" style="padding:15px 30px;font-size:18px;background:#27ae60;color:white;border:none;border-radius:8px;cursor:pointer">Remove Backgrounds</button>
         </form>
-        <p style="font-size:12px;color:green">Tested with 50 images — no crashes!</p>
+        <p style="font-size:12px;color:green">Lightweight mode: Low RAM, fast startup</p>
         <br>
         <small>Made by <a href="https://x.com/cracksellington">@cracksellington</a> • Free & Open Source</small>
     </div>
@@ -45,7 +45,7 @@ def upload():
         for file in files:
             try:
                 img = Image.open(file.stream).convert("RGBA")
-                # USE CACHED SESSION — NO MEMORY LEAK
+                # USE CACHED LIGHTWEIGHT SESSION — LOW MEMORY
                 output = remove(img, session=session)
                 img_io = io.BytesIO()
                 output.save(img_io, 'PNG')
@@ -56,6 +56,11 @@ def upload():
                 print(f"Processed {processed}/{len(files)}: {file.filename}")
             except Exception as e:
                 print(f"Error: {e}")
+                # Skip bad images to avoid crash
+                continue
+
+    if processed == 0:
+        return "<h3>No images processed</h3>", 400
 
     zip_buffer.seek(0)
     return send_file(
