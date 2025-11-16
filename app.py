@@ -1,15 +1,18 @@
 import os
-# FORCE CPU ONLY — THIS IS THE KEY
 os.environ["ONNXRUNTIME_EXECUTION_PROVIDERS"] = "CPUExecutionProvider"
-os.environ["REMGB_MODEL"] = "u2net"  # lightweight model
 
 from flask import Flask, request, send_file
-from rembg import remove
+from rembg import new_session, remove
 from PIL import Image
 import io
 import zipfile
 
 app = Flask(__name__)
+
+# LOAD MODEL ONCE AT STARTUP
+print("Loading AI model... (this takes 10-15 sec on first start)")
+session = new_session("u2net")  # lightweight, fast
+print("Model loaded!")
 
 @app.route("/")
 def home():
@@ -37,17 +40,19 @@ def upload():
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        for file in files:
+        for i, file in enumerate(files):
             try:
                 img = Image.open(file.stream).convert("RGBA")
-                output = remove(img)
+                # USE CACHED MODEL
+                output = remove(img, session=session)
                 img_io = io.BytesIO()
                 output.save(img_io, 'PNG')
                 img_io.seek(0)
                 name = os.path.splitext(file.filename)[0] + ".png"
                 zf.writestr(name, img_io.getvalue())
+                print(f"Processed {i+1}/{len(files)}: {file.filename}")
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"Error on {file.filename}: {e}")
 
     zip_buffer.seek(0)
     return send_file(
@@ -57,7 +62,6 @@ def upload():
         download_name='nobg-cracksellington.zip'
     )
 
-# RENDER AUTO-DETECTS THIS
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     print(f"Starting on port {port}")
