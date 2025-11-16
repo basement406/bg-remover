@@ -2,9 +2,10 @@ services:
   - type: web
     name: bg-remover
     env: python
+    pythonVersion: "3.11"  # This is the KEY FIX
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
     plan: free
-    # Increase timeout to 30 minutes
-    healthCheckPath: /
-    instanceCount: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
