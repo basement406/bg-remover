@@ -2,10 +2,7 @@ services:
   - type: web
     name: bg-remover
     env: python
-    pythonVersion: "3.11"  # This is the KEY FIX
+    pythonVersion: "3.11"
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
     plan: free
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11
