@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # LOAD LIGHTWEIGHT MODEL ON STARTUP (43MB, ~200MB RAM)
 print("Loading lightweight AI model (silueta)...")
-session = new_session("silueta")  # Smaller than u2net, no memory issues
+session = new_session("isnet-general-use")  # Smaller than u2net, no memory issues
 print("Model loaded! Ready for 100 images (low RAM mode).")
 
 @app.route("/")
