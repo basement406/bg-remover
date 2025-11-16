@@ -11,7 +11,6 @@ import uuid
 
 app = Flask(__name__)
 
-# LOAD MODEL ONCE
 print("Loading ECOMMERCE AI (isnet-general-use)...")
 session = new_session("isnet-general-use")
 print("Model loaded! 100 items = <1.5GB RAM.")
@@ -71,28 +70,29 @@ def process_job(job_id):
     files = job["files"]
     zip_buffer = io.BytesIO()
 
-    # OPEN ZIP BUFFER BEFORE WRITING
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for i, file in enumerate(files):
             try:
                 print(f"Processing {i+1}/{len(files)}: {file.filename}")
                 img = Image.open(file.stream).convert("RGBA")
                 output = remove(img, session=session, alpha_matting=False)
+                
                 img_io = io.BytesIO()
                 output.save(img_io, 'PNG')
-                img_io.seek(0)
-                name = os.path.splitext(file.filename)[0] + ".png"
-                zf.writestr(name, img_io.getvalue())
+                img_io.seek(0)  # ← CRITICAL
+                zf.writestr(
+                    os.path.splitext(file.filename)[0] + ".png",
+                    img_io.getvalue()
+                )
                 job["progress"] = int((i + 1) / len(files) * 100)
                 print(f"Progress: {job['progress']}%")
             except Exception as e:
                 print(f"Error: {e}")
 
-    # MOVE CURSOR TO START AFTER WRITING
     zip_buffer.seek(0)
     job["result"] = zip_buffer.getvalue()
     job["status"] = "done"
-    print(f"Job {job_id} DONE. Size: {len(job['result'])/1024:.1f} KB")
+    print(f"Job {job_id} DONE. ZIP size: {len(job['result'])/1024:.1f} KB")
 
 @app.route("/status/<job_id>")
 def status(job_id):
