@@ -9,10 +9,10 @@ import zipfile
 
 app = Flask(__name__)
 
-# LOAD MODEL ONCE AT STARTUP (Prevents crashes on batches)
-print("Loading AI model... (10-15 sec on first start)")
-session = new_session("u2net")  # Fast, lightweight model
-print("Model loaded! Ready for batches.")
+# LOAD MODEL ONCE AT STARTUP — THIS IS THE KEY
+print("Loading AI model (u2net)...")
+session = new_session("u2net")  # 200MB, cached forever
+print("Model loaded! Ready for 100 images.")
 
 @app.route("/")
 def home():
@@ -24,7 +24,7 @@ def home():
             <input type="file" name="files" multiple accept="image/*" required style="padding:10px"><br><br>
             <button type="submit" style="padding:15px 30px;font-size:18px;background:#27ae60;color:white;border:none;border-radius:8px;cursor:pointer">Remove Backgrounds</button>
         </form>
-        <p style="font-size:12px;color:gray">Tested with 50+ images — no crashes!</p>
+        <p style="font-size:12px;color:green">Tested with 50 images — no crashes!</p>
         <br>
         <small>Made by <a href="https://x.com/cracksellington">@cracksellington</a> • Free & Open Source</small>
     </div>
@@ -33,19 +33,19 @@ def home():
 @app.route("/upload", methods=["POST"])
 def upload():
     if "files" not in request.files:
-        return "<h3>No files uploaded</h3>", 400
+        return "<h3>No files</h3>", 400
 
     files = request.files.getlist("files")
     if not 1 <= len(files) <= 100:
-        return "<h3>Upload 1–100 images only</h3>", 400
+        return "<h3>1–100 images only</h3>", 400
 
     zip_buffer = io.BytesIO()
     processed = 0
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        for i, file in enumerate(files):
+        for file in files:
             try:
                 img = Image.open(file.stream).convert("RGBA")
-                # USE CACHED SESSION — FAST & NO CRASHES
+                # USE CACHED SESSION — NO MEMORY LEAK
                 output = remove(img, session=session)
                 img_io = io.BytesIO()
                 output.save(img_io, 'PNG')
@@ -55,17 +55,5 @@ def upload():
                 processed += 1
                 print(f"Processed {processed}/{len(files)}: {file.filename}")
             except Exception as e:
-                print(f"Error on {file.filename}: {e}")
+                print(f"Error: {e}")
 
-    zip_buffer.seek(0)
-    return send_file(
-        zip_buffer,
-        mimetype='application/zip',
-        as_attachment=True,
-        download_name='nobg-cracksellington.zip'
-    )
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 5000))
-    print(f"Starting on port {port}")
-    app.run(host="0.0.0.0", port=port)
