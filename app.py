@@ -1,3 +1,6 @@
+import os
+os.environ["ONNXRUNTIME_EXECUTION_PROVIDERS"] = "CPUExecutionProvider"
+
 from flask import Flask, request, send_file
 from rembg import remove
 from PIL import Image
