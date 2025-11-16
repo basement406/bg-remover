@@ -1,12 +1,14 @@
 import os
-os.environ["ONNXRUNTIME_EXECUTION_PROVIDERS"] = "CPUExecutionProvider"
+os.environ["ONNXRUNTIME_EXECUTION_PROVID.....
+
+import os
+os.environ["ONNXRUNTIME_EXECUTION_PROVIDERS"] = "[CPUExecutionProvider]"
 
 from flask import Flask, request, send_file
 from rembg import remove
 from PIL import Image
 import io
 import zipfile
-import os
 
 app = Flask(__name__)
 
@@ -17,10 +19,10 @@ def home():
     <p>Upload up to <strong>100 images</strong> → Get ZIP with transparent backgrounds!</p>
     <form action="/upload" method="post" enctype="multipart/form-data">
         <input type="file" name="files" multiple accept="image/*" required><br><br>
-        <button type="submit" style="padding:10px 20px;font-size:16px">Remove Backgrounds</button>
+        <button type="submit" style="padding:10px 20px;font-size:16px;background:#3498db;color:white;border:none;border-radius:5px;cursor:pointer">Remove Backgrounds</button>
     </form>
     <br>
-    <small>Powered by <a href="https://github.com/danielgatis/rembg">rembg</a> • Free & Open Source</small>
+    <small>Live on Render • <a href="https://x.com/cracksellington">@cracksellington</a></small>
     """
 
 @app.route("/upload", methods=["POST"])
@@ -54,5 +56,8 @@ def upload():
         download_name='nobg-by-cracksellington.zip'
     )
 
+# THIS IS THE KEY LINE
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    port = int(os.getenv("PORT", 5000))
+    print(f"Starting Flask app on port {port}")
+    app.run(host="0.0.0.0", port=port)
