@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # LOAD MODEL ONCE AT STARTUP — THIS IS THE KEY
 print("Loading AI model (u2net)...")
-session = new_session("u2net")  # 200MB, cached forever
+session = new_session("u2net")
 print("Model loaded! Ready for 100 images.")
 
 @app.route("/")
@@ -57,3 +57,15 @@ def upload():
             except Exception as e:
                 print(f"Error: {e}")
 
+    zip_buffer.seek(0)
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name='nobg-cracksellington.zip'
+    )
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 5000))
+    print(f"Starting on port {port}")
+    app.run(host="0.0.0.0", port=port)
