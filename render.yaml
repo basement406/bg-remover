@@ -5,4 +5,5 @@ services:
     pythonVersion: "3.11"
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
-    plan: hobby
+    plan: standard
+    instanceType: standard
